@@ -11,3 +11,5 @@ export default async function AdminLayout({ children }) {
   if (role !== "admin") redirect("/pending");
   return <AppShell user={{ name: session.user.name || "Administrator", email: session.user.email }}>{children}</AppShell>;
 }
+
+//
