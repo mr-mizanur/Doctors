@@ -1,5 +1,3 @@
-// Full-stack test using a disposable local MongoDB instance and demo accounts only.
-// This test is intended for CI, NOT a real clinical data database.
 import assert from "node:assert/strict";
 import { MongoClient } from "mongodb";
 
