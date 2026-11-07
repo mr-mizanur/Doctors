@@ -1,5 +1,4 @@
-// This endpoint runs on the same origin as the frontend. Credentials are
-// validated twice: at the Next.js gateway and by the Express session verifier.
+
 export async function api(path, options = {}) {
   const response = await fetch("/api/backend/" + path.replace(/^\//, ""), {
     credentials: "same-origin",

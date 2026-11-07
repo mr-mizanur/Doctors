@@ -2,11 +2,6 @@ import "server-only";
 import { auth, authDb } from "@/lib/auth";
 import { ObjectId } from "mongodb";
 
-/**
- * MongoDB 'user' collection is the ONLY authorization source.
- * Better Auth session establishes identity, not its (possibly cached) role.
- * Atlas role updates take effect on the user's very next request.
- */
 export async function getAccess(headers) {
   const session = await auth.api.getSession({ headers });
   if (!session?.user?.id || typeof session.user.email !== "string") {

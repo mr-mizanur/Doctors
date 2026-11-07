@@ -3,8 +3,7 @@ import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
-// Never silently fall back to localhost: a missing .env.local must be visible.
-// This app uses the same MongoDB Atlas database as the standalone Express API.
+
 const uri = process.env.MONGODB_URI?.trim();
 if (!uri) {
   throw new Error(
@@ -15,9 +14,7 @@ if (!uri) {
 if (!/^mongodb(\+srv)?:\/\//.test(uri)) {
   throw new Error("Invalid MONGODB_URI scheme. Expected mongodb:// or mongodb+srv://.");
 }
-// Keep a single client per auth module instance. Do not cache MongoClient on
-// globalThis: Next.js development hot reload can reuse an already closed client,
-// resulting in MongoTopologyClosedError on sign-up and sign-in.
+
 const mongo = new MongoClient(uri, {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 10000,
@@ -29,7 +26,7 @@ export const authDb = mongo.db(process.env.MONGODB_DB || "doctor-tracker");
 export const auth = betterAuth({
   database: mongodbAdapter(authDb),
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
-  // Registration must always create an ordinary user, even for a forged signup payload.
+  
   databaseHooks: {
     user: {
       create: {
@@ -37,7 +34,6 @@ export const auth = betterAuth({
       },
     },
   },
-  // Role is server-owned. It is never accepted from registration/profile inputs.
   user: {
     additionalFields: {
       role: {
