@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import Link from "next/link";
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiUsers, FiX, FiStethoscope, FiCalendar } from "react-icons/fi";
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiUsers, FiX, FiActivity, FiCalendar } from "react-icons/fi";
 import { api, queryString } from "@/lib/api";
 import Pagination from "@/components/Pagination";
 
@@ -79,7 +79,7 @@ export default function DoctorsManager() {
     {error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
     {notice && <div role="status" className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800">{notice}</div>}
     {formOpen && <div className="card-panel mb-7 p-5 sm:p-7">
-      <div className="mb-5 flex items-center gap-3"><span className="rounded-xl bg-teal-50 p-3 text-teal-700"><FiStethoscope size={20}/></span><div><h2 className="text-lg font-bold">{editing ? "Edit doctor" : "New doctor"}</h2><p className="text-xs text-slate-500">Please provide accurate contact and hospital details.</p></div></div>
+      <div className="mb-5 flex items-center gap-3"><span className="rounded-xl bg-teal-50 p-3 text-teal-700"><FiActivity size={20}/></span><div><h2 className="text-lg font-bold">{editing ? "Edit doctor" : "New doctor"}</h2><p className="text-xs text-slate-500">Please provide accurate contact and hospital details.</p></div></div>
       <form onSubmit={save} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
           ["Doctor name","name","text","Dr. Jane Smith"],
@@ -105,7 +105,7 @@ export default function DoctorsManager() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? <tr><td colSpan={6} className="px-6 py-14 text-center text-slate-500">Loading doctors...</td></tr> :
-              records.length === 0 ? <tr><td colSpan={6} className="px-6 py-16 text-center"><FiStethoscope className="mx-auto mb-3 text-slate-300" size={28}/><strong className="text-slate-700">No doctors found</strong><p className="mt-1 text-xs text-slate-500">Add a doctor or adjust your filters.</p></td></tr> :
+              records.length === 0 ? <tr><td colSpan={6} className="px-6 py-16 text-center"><FiActivity className="mx-auto mb-3 text-slate-300" size={28}/><strong className="text-slate-700">No doctors found</strong><p className="mt-1 text-xs text-slate-500">Add a doctor or adjust your filters.</p></td></tr> :
               records.map(record => <tr key={record._id} className="hover:bg-slate-50/80">
                 <td className="px-6 py-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-50 font-bold text-teal-700">{(record.name || "D").replace(/^Dr\.\s*/i,"").charAt(0).toUpperCase()}</span><div><p className="font-bold text-slate-900">{record.name}</p><p className="mt-1 text-xs text-teal-700">{record.specialty}</p></div></div></td>
                 <td className="px-6 py-4 text-slate-600">{record.hospital}</td>
