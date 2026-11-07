@@ -191,3 +191,9 @@ If your terminal shows `MongoServerSelectionError: connect ECONNREFUSED 127.0.0.
 6. Visit `http://localhost:3000/register` and submit the form. `/api/auth/sign-up/email` accepts **POST**, so opening this URL in a browser with GET may give 404 and is not a registration error.
 
 If `check:db` cannot connect to MongoDB Atlas, check the database user's password, the Atlas Network Access allowed IP, DNS/internet access and the connection string. A failed Atlas connection is not solved by changing the frontend authentication UI.
+
+### Fix: `MongoTopologyClosedError: Topology is closed`
+
+This can happen when a development hot-reload reuses a stale or closed `MongoClient` instance. The auth module now creates its own client rather than caching a potentially closed one on `globalThis`. After changing the database URI or pulling this fix, **stop the Next.js process and start it again**. Avoid using `npm run check:db` as a substitute for setting `.env.local` correctly; it only verifies the connection.
+
+If `npm run check:db` says `Missing script`, your checkout is older than the GitHub main branch. `git status` may say "up to date" against a stale local tracking ref. Run `git fetch origin` then `git pull --ff-only origin main`; preserve any modified `.env.example` file using Git stash or a local backup first. Do not commit actual credentials.

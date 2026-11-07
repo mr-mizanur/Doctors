@@ -15,19 +15,14 @@ if (!uri) {
 if (!/^mongodb(\+srv)?:\/\//.test(uri)) {
   throw new Error("Invalid MONGODB_URI scheme. Expected mongodb:// or mongodb+srv://.");
 }
-// Reuse the MongoDB client in development only for the SAME connection string.
-// A stale localhost client must never be reused after changing environment config.
-const cached = globalThis.__doctorsTrackerMongoCache;
-const mongo = cached?.uri === uri
-  ? cached.client
-  : new MongoClient(uri, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-    });
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__doctorsTrackerMongoCache = { uri, client: mongo };
-}
+// Keep a single client per auth module instance. Do not cache MongoClient on
+// globalThis: Next.js development hot reload can reuse an already closed client,
+// resulting in MongoTopologyClosedError on sign-up and sign-in.
+const mongo = new MongoClient(uri, {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 10000,
+  connectTimeoutMS: 10000,
+});
 
 export const authDb = mongo.db(process.env.MONGODB_DB || "doctor-tracker");
 
