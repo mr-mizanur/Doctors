@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { authClient } from '@/lib/auth-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,22 +17,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      // Better Auth Client দিয়ে সাইন ইন
+      const { data, error: authError } = await authClient.signIn.email({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Login failed. Invalid credentials.');
+      if (authError) {
+        throw new Error(authError.message || 'Login failed. Invalid credentials.');
       }
 
-      if (data.token) {
-        localStorage.setItem('adminToken', data.token);
-      }
-
+      // সফল হলে ড্যাশবোর্ডে নেভিগেট করবে
       router.push('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -43,7 +40,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-8">
         
-        {/* Logo Section (Rounded with Border & Light Theme) */}
+        {/* Logo Section */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="w-20 h-20 rounded-full border-2 border-slate-200 bg-white p-1.5 shadow-md flex items-center justify-center mb-4 overflow-hidden">
             <img 
@@ -53,7 +50,7 @@ export default function LoginPage() {
             />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">
-            Doctors Tracker 
+            Doctors Tracker
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Sign in to manage doctors and patient analytics
@@ -107,6 +104,14 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* Create Account Navigation Link */}
+        <div className="mt-6 text-center text-sm text-slate-600">
+          Don't have an account?{' '}
+          <Link href="/register" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">
+            Create Account
+          </Link>
+        </div>
 
       </div>
     </div>
