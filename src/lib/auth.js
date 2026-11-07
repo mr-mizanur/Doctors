@@ -8,14 +8,24 @@ const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/doctor-tracker
 const mongo = globalThis.__doctorsTrackerMongo || new MongoClient(uri, { maxPoolSize: 10 });
 if (process.env.NODE_ENV !== "production") globalThis.__doctorsTrackerMongo = mongo;
 
+export const authDb = mongo.db(process.env.MONGODB_DB || "doctor-tracker");
+
 export const auth = betterAuth({
-  database: mongodbAdapter(mongo.db(process.env.MONGODB_DB || "doctor-tracker")),
+  database: mongodbAdapter(authDb),
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
-  // Role is server-owned. No registration or profile update can assign admin.
+  // Registration must always create an ordinary user, even for a forged signup payload.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => ({ data: { ...user, role: "user" } }),
+      },
+    },
+  },
+  // Role is server-owned. It is never accepted from registration/profile inputs.
   user: {
     additionalFields: {
       role: {
-        type: "string",
+        type: ["user", "admin"],
         required: false,
         defaultValue: "user",
         input: false,

@@ -143,7 +143,7 @@ Filter parameters: `page`, `limit`, `search`, `dateFrom`, `dateTo`; `specialty` 
 
 ### 1. Better Auth with a Next.js gateway
 
-Better Auth runs in Next.js because sessions are browser cookies tied to the frontend origin. Browser requests go only to the same-origin `/api/backend/*` gateway, where sessions are verified. Express independently validates the forwarded cookie through Better Auth rather than trusting user-supplied IDs. This avoids cross-origin cookie headaches, hides the backend endpoint from browser code, and gives both services an explicit access-control boundary. Roles are server-owned Better Auth fields (`input: false`); every protected route and API call enforces `role === 'admin'`.
+Better Auth runs in Next.js because sessions are browser cookies tied to the frontend origin. Browser requests go only to the same-origin `/api/backend/*` gateway, where sessions are verified. Express independently validates the forwarded cookie through Better Auth rather than trusting user-supplied IDs. This avoids cross-origin cookie headaches, hides the backend endpoint from browser code, and gives both services an explicit access-control boundary. Roles are server-owned Better Auth fields (`input: false`); **both** Next.js and Express load current `role` from the MongoDB Better Auth `user` collection on each protected request. No cached role from a session is trusted, so promoting/revoking an admin takes effect on the next request.
 
 ### 2. MongoDB indexed prefix search + aggregation
 

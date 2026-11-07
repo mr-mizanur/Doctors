@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getAccess } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 
 
@@ -19,17 +19,18 @@ async function handle(request, context) {
   if (!permitted(cleanPath, method))
     return NextResponse.json({ error: "Unsupported API endpoint" }, { status: 404 });
 
-  let session;
+  let access;
   try {
-    session = await auth.api.getSession({ headers: request.headers });
-  } catch {
-    return NextResponse.json({ error: "Authentication is unavailable" }, { status: 503 });
+    access = await getAccess(request.headers);
+  } catch (error) {
+    console.error("Authorization database check failed:", error?.name || "Error");
+    return NextResponse.json({ error: "Cannot verify your account role. Check MongoDB connectivity." }, { status: 503 });
   }
-  if (!session?.user?.email)
+  if (!access.session?.user?.email)
     return NextResponse.json({ error: "Please sign in to continue" }, { status: 401 });
 
-  // Enforce current database-backed role on every protected REST request.
-  if (session.user.role !== "admin")
+  // No stale cookie-role claims: fetch live authorization from MongoDB.
+  if (access.role !== "admin")
     return NextResponse.json({ error: "Administrator role required" }, { status: 403 });
 
   const backend = (process.env.BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
