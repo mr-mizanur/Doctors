@@ -178,3 +178,16 @@ Use a demo administrator account promoted to `role: "admin"` in the local MongoD
 - Never commit `.env` / `.env.local`, never use real patient data for public demonstration, and back up data before migrations.
 - Pre-existing records from the older server might not have `doctorId` or normalized search fields; backfill them for complete search and doctor-specific analytics.
 - A successful Next.js build does not by itself test Atlas network access or deployment; verify the two services together before submission.
+
+## Fix: registration 500 / MongoDB ECONNREFUSED
+
+If your terminal shows `MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017`, Next.js is **not** loading your Atlas connection string. The previous localhost fallback was removed to prevent misleading failures.
+
+1. In the **frontend repo root** (the directory containing `package.json`), create `.env.local` (not in `src/`). It is gitignored and **never** comes down with `git pull`.
+2. Put `MONGODB_URI=mongodb+srv://<database-user>:<password>@<atlas-host>/doctor-tracker?retryWrites=true&w=majority` in the frontend `.env.local` with your **own rotated credentials**. Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=http://localhost:3000`, `NEXT_PUBLIC_APP_URL=http://localhost:3000`, `BACKEND_URL=http://localhost:5000`. Do not copy the string into source files, screenshots or GitHub commits.
+3. From the frontend directory, run `npm run check:db`. It checks Next.js environment loading and pings MongoDB without printing your secrets.
+4. Stop any running `next dev` process, then run `npm run dev` again. Restarting is required whenever environment variables change.
+5. Keep the separate Express server running on port 5000. Its own `.env` also needs the Atlas URI.
+6. Visit `http://localhost:3000/register` and submit the form. `/api/auth/sign-up/email` accepts **POST**, so opening this URL in a browser with GET may give 404 and is not a registration error.
+
+If `check:db` cannot connect to MongoDB Atlas, check the database user's password, the Atlas Network Access allowed IP, DNS/internet access and the connection string. A failed Atlas connection is not solved by changing the frontend authentication UI.

@@ -3,10 +3,31 @@ import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
-// Cache the MongoDB connection across Next.js hot reloads.
-const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/doctor-tracker";
-const mongo = globalThis.__doctorsTrackerMongo || new MongoClient(uri, { maxPoolSize: 10 });
-if (process.env.NODE_ENV !== "production") globalThis.__doctorsTrackerMongo = mongo;
+// Never silently fall back to localhost: a missing .env.local must be visible.
+// This app uses the same MongoDB Atlas database as the standalone Express API.
+const uri = process.env.MONGODB_URI?.trim();
+if (!uri) {
+  throw new Error(
+    "MONGODB_URI is missing in the Next.js process. Create Doctors-Tracker/.env.local, " +
+    "set MONGODB_URI to your MongoDB Atlas connection string, then restart npm run dev."
+  );
+}
+if (!/^mongodb(\+srv)?:\/\//.test(uri)) {
+  throw new Error("Invalid MONGODB_URI scheme. Expected mongodb:// or mongodb+srv://.");
+}
+// Reuse the MongoDB client in development only for the SAME connection string.
+// A stale localhost client must never be reused after changing environment config.
+const cached = globalThis.__doctorsTrackerMongoCache;
+const mongo = cached?.uri === uri
+  ? cached.client
+  : new MongoClient(uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+    });
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__doctorsTrackerMongoCache = { uri, client: mongo };
+}
 
 export const authDb = mongo.db(process.env.MONGODB_DB || "doctor-tracker");
 

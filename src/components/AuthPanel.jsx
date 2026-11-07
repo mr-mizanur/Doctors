@@ -27,7 +27,14 @@ export default function AuthPanel({ mode = "login" }) {
       const response = isRegister
         ? await authClient.signUp.email({ name: form.name.trim(), email, password: form.password })
         : await authClient.signIn.email({ email, password: form.password });
-      if (response.error) throw new Error(response.error.message || "Authentication failed.");
+      if (response.error) {
+        const serverFailure = Number(response.error.status) >= 500;
+        throw new Error(
+          serverFailure
+            ? "Authentication service cannot connect to its database. Check the frontend MongoDB configuration and server terminal."
+            : response.error.message || "Authentication failed."
+        );
+      }
       // Both routes independently consult the current role stored in MongoDB.
       router.replace(isRegister ? "/pending" : "/dashboard");
       router.refresh();
