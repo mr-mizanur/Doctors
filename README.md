@@ -1,36 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Doctors Tracker
 
-## Getting Started
+A modern, session-protected administrative application for managing doctors and their patients in one place. Built with Next.js and Better Auth on the frontend and a standalone Express + MongoDB REST API on the backend, it provides secure CRUD workflows, fast searchable directories, flexible filters, server-side pagination, and meaningful analytics for patient activity and doctor workload.
 
-First, run the development server:
+- **Frontend:** [Doctors-Tracker](https://github.com/mr-mizanur/Doctors-Tracker)
+- **API:** [Doctors-Tracker-Server](https://github.com/mr-mizanur/Doctors-Tracker-Server)
+- **Demo:** Not deployed in this README; configure your deployments before submitting a live link.
+
+## Features
+
+- Better Auth email/password registration, login, persistent sessions and logout
+- Protected dashboard, doctors and patients routes; optional email-based administrator allowlist
+- Doctor management: create, update, delete, filter by specialization/date, name/hospital prefix search and pagination
+- Patient management: assign doctor, create, edit, delete, search by name prefix, condition/date/doctor filtering and pagination
+- Doctor-specific patient views (`/patients?doctorId=...`)
+- Dashboard: total doctors, total patients, patients added in the last 14 days and top doctors by patient count
+- Mobile-friendly sidebar/navigation, loading/error/empty states and input validation
+
+## Local setup
+
+**Prerequisites:** Node.js 20.9+ (22+ recommended), npm, a MongoDB Atlas cluster with an authorized database user, and Git.
+
+### 1. Clone both repositories
+
+```bash
+git clone https://github.com/mr-mizanur/Doctors-Tracker.git
+git clone https://github.com/mr-mizanur/Doctors-Tracker-Server.git
+```
+
+### 2. Configure and start the backend
+
+```bash
+cd Doctors-Tracker-Server
+npm install
+cp .env.example .env
+```
+
+In `Doctors-Tracker-Server/.env`, configure:
+
+```dotenv
+PORT=5000
+MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/doctor-tracker?retryWrites=true&w=majority
+MONGODB_DB=doctor-tracker
+FRONTEND_URL=http://localhost:3000
+# Optional, recommended in production:
+# ADMIN_EMAILS=admin@example.com
+```
+
+Run `npm run dev`. Confirm the API process and MongoDB connection:
+
+- `http://localhost:5000/health` → service status
+- `http://localhost:5000/health/db` → database connectivity
+
+### 3. Configure and start Next.js
+
+In a **second terminal**:
+
+```bash
+cd Doctors-Tracker
+npm install
+cp .env.example .env.local
+```
+
+Set these variables in `Doctors-Tracker/.env.local`:
+
+```dotenv
+BETTER_AUTH_SECRET=YOUR_RANDOM_32_PLUS_CHARACTER_SECRET
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/doctor-tracker?retryWrites=true&w=majority
+MONGODB_DB=doctor-tracker
+BACKEND_URL=http://localhost:5000
+# Optional, recommended in production; must match backend's allowlist:
+# ADMIN_EMAILS=admin@example.com
+```
+
+`BETTER_AUTH_SECRET` is for the Next.js app, not the Express service. Keep secrets in local environment files only; do **not** commit them.
+
+Start Next.js:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000`, register a new account (or sign into an existing one), then open `/dashboard`. For a truly restricted admin portal, set the same `ADMIN_EMAILS` value on **both** processes before allowing registrations.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 4. Validate the project
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+```
 
-## Learn More
+For API-only validation, run `npm test` in the backend directory.
 
-To learn more about Next.js, take a look at the following resources:
+## System architecture
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+Browser (localhost:3000)
+  |  Better Auth session cookie
+  v
+Next.js App Router
+  |-- /api/auth/*                -> Better Auth / MongoDB user sessions
+  |-- /dashboard, /doctors,
+  |   /patients                  -> protected UI route layout
+  |
+  |-- /api/backend/*             -> same-origin server-side API gateway
+       | checks Better Auth session / ADMIN_EMAILS
+       | forwards session cookie (server-to-server)
+       v
+Express API (localhost:5000)
+  | independently checks session via Next.js /api/auth/get-session
+  | performs validation, filtering, pagination and aggregation
+  v
+MongoDB: doctors, patients, Better Auth collections
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Important:** `localhost:5000/api/stats` is protected, not a public analytics URL. A direct unauthenticated request should return 401. The frontend dashboard uses `http://localhost:3000/api/backend/stats` with your signed-in session.
 
-## Deploy on Vercel
+## REST APIs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Method | URL | Function |
+| --- | --- | --- |
+| GET / POST | `/api/doctors` | List/create doctors |
+| GET / PUT / DELETE | `/api/doctors/:id` | Detail/update/delete |
+| GET / POST | `/api/patients` | List/create patients |
+| PUT / DELETE | `/api/patients/:id` | Update/delete patient |
+| GET | `/api/stats` | Dashboard metrics and analytics |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Filter parameters: `page`, `limit`, `search`, `dateFrom`, `dateTo`; `specialty` / `hospital` for doctors, `condition` / `doctorId` for patients. Search matches **prefixes**, not arbitrary substrings. All data operations are processed on the server. The API returns validation and error responses in JSON.
+
+## Technical decisions
+
+### 1. Better Auth with a Next.js gateway
+
+Better Auth runs in Next.js because sessions are browser cookies tied to the frontend origin. Browser requests go only to the same-origin `/api/backend/*` gateway, where sessions are verified. Express independently validates the forwarded cookie through Better Auth rather than trusting user-supplied IDs. This avoids cross-origin cookie headaches, hides the backend endpoint from browser code, and gives both services an explicit access-control boundary. An `ADMIN_EMAILS` allowlist is available for production admin authorization.
+
+### 2. MongoDB indexed prefix search + aggregation
+
+Doctors and patients store normalized search fields (`searchName`, `searchHospital`) with indexes. Escaped anchored prefix regex can use indexes more efficiently than unanchored case-insensitive regex, while server-side `skip/limit` keeps the response payload small. Date/doctor/condition filters run in MongoDB. Analytics are aggregated in the database; the app doesn't load every record to compute patient counts. This improves scalability while keeping implementation simple for an evaluation project. For very large datasets, cursor pagination and Atlas Search are logical next steps.
+
+## UI screenshots
+
+Add actual screenshots after starting the app or deploying it. Suggested file paths:
+
+- `docs/screenshots/login-desktop.png`
+- `docs/screenshots/dashboard-desktop.png`
+- `docs/screenshots/doctors-desktop.png`
+- `docs/screenshots/patients-desktop.png`
+- `docs/screenshots/dashboard-mobile.png`
+- `docs/screenshots/patients-mobile.png`
+
+Do **not** use screenshots containing real patient names, records, phone numbers, or other health data. Capture sanitized demo content. Screenshot files are not present yet; do not assume this documentation includes verified visual evidence.
+
+## Security and deployment notes
+
+- Restrict production administrator access with `ADMIN_EMAILS` on both services and disable public self-service enrollment if you need a private admin-only environment.
+- Use HTTPS on both deployments and update `BACKEND_URL`, `FRONTEND_URL`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_APP_URL`.
+- Allow the application's IP/network to reach MongoDB Atlas; follow least-privilege database user policies.
+- Never commit `.env` / `.env.local`, never use real patient data for public demonstration, and back up data before migrations.
+- Pre-existing records from the older server might not have `doctorId` or normalized search fields; backfill them for complete search and doctor-specific analytics.
+- A successful Next.js build does not by itself test Atlas network access or deployment; verify the two services together before submission.

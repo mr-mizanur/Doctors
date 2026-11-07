@@ -1,0 +1,26 @@
+name: Validate Next.js
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/doctor-tracker
+          BETTER_AUTH_SECRET: build_test_only_secret_not_for_real_accounts_12345
+          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          BACKEND_URL: http://localhost:5000
