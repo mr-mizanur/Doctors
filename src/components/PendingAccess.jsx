@@ -21,7 +21,8 @@ export default function PendingAccess({ name, email }) {
   function checkAccess() {
     // Full navigation forces a fresh server-side session/role check.
     // If role has changed to admin, the protected layout now permits entry.
-    window.location.assign("/dashboard");
+    router.replace("/dashboard");
+    router.refresh();
   }
 
   return (

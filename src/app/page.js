@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { authClient } from '@/lib/auth-client';
 
 export default function LoginPage() {
@@ -45,8 +46,10 @@ export default function LoginPage() {
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="w-20 h-20 rounded-full border-2 border-slate-200 bg-white p-1.5 shadow-md flex items-center justify-center mb-4 overflow-hidden">
-            <img 
-              src="/doctors.png" 
+            <Image 
+              src="/doctors.png"
+              width={80}
+              height={80} 
               alt="Doctors Tracker Logo" 
               className="w-full h-full rounded-full object-cover"
             />
@@ -109,7 +112,7 @@ export default function LoginPage() {
 
         {/* Create Account Navigation Link */}
         <div className="mt-6 text-center text-sm text-slate-600">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/register" className="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">
             Create Account
           </Link>

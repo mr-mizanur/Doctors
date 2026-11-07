@@ -30,7 +30,6 @@ export default function DoctorsManager() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setError("");
     const query = queryString({ search: deferred, specialty, dateFrom, dateTo, page, limit: 10 });
     api("doctors?" + query, { signal: controller.signal }).then((result) => {
       setRecords(result.items || []);

@@ -18,7 +18,6 @@ export default function DashboardStats() {
   const [reload,setReload] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);setError("");
     api("stats", {signal:controller.signal})
       .then(setStats)
       .catch(err=>{if(err.name !== "AbortError") setError(err.message)})

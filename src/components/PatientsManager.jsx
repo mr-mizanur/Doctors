@@ -51,7 +51,6 @@ export default function PatientsManager({ initialDoctorId = "" }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setError("");
     api("patients?" + queryString({ search: deferred, condition, doctorId, dateFrom, dateTo, page, limit: 10 }), { signal: controller.signal })
       .then(result => { setPatients(result.items || []); setMeta(result.pagination || { page, pages: 0, total: 0 }); })
       .catch(err => { if (err.name !== "AbortError") setError(err.message); })
