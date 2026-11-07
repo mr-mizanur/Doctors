@@ -1,0 +1,52 @@
+name: Full Stack Integration
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/doctor-tracker
+      MONGODB_DB: doctor-tracker
+      BETTER_AUTH_SECRET: ci_only_local_fake_secret_123456789012345678
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BACKEND_URL: http://127.0.0.1:5000
+      FRONTEND_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install frontend
+        run: npm ci
+      - name: Download Express backend
+        run: |
+          git clone --depth 1 https://github.com/mr-mizanur/Doctors-Tracker-Server.git ../Doctors-Tracker-Server
+          npm ci --prefix ../Doctors-Tracker-Server
+      - name: Build frontend
+        run: npm run build
+      - name: Start local services and run end-to-end test
+        run: |
+          PORT=5000 node ../Doctors-Tracker-Server/index.js > /tmp/doctors-backend.log 2>&1 &
+          backend_pid=$!
+          npm run start > /tmp/doctors-frontend.log 2>&1 &
+          frontend_pid=$!
+          trap 'kill $backend_pid $frontend_pid 2>/dev/null || true' EXIT
+          node tests/integration.mjs || {
+            echo '--- Express diagnostics ---'
+            tail -100 /tmp/doctors-backend.log || true
+            echo '--- Next.js diagnostics ---'
+            tail -100 /tmp/doctors-frontend.log || true
+            exit 1
+          }
