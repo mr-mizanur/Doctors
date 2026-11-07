@@ -81,10 +81,10 @@ export default function DoctorsManager() {
       <div className="mb-5 flex items-center gap-3"><span className="rounded-xl bg-teal-50 p-3 text-teal-700"><FiActivity size={20}/></span><div><h2 className="text-lg font-bold">{editing ? "Edit doctor" : "New doctor"}</h2><p className="text-xs text-slate-500">Please provide accurate contact and hospital details.</p></div></div>
       <form onSubmit={save} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
-          ["Doctor name","name","text","Dr. Jane Smith"],
+          ["Doctor name","name","text","Dr. Abdul Rahman"],
           ["Hospital","hospital","text","City General Hospital"],
-          ["Phone number","phone","tel","+8801712345678"],
-          ["Email address","email","email","doctor@hospital.com"],
+          ["Phone number","phone","tel","+8801020100221"],
+          ["Email address","email","email","abdurrahman@gmail.com"],
         ].map(([label,name,type,placeholder])=><label key={name}><span className="form-label">{label}</span><input className="form-input" type={type} placeholder={placeholder} maxLength={name === "hospital" ? 150 : 160} required={name === "name" || name === "hospital"} value={form[name]} onChange={e=>setForm(v=>({...v,[name]:e.target.value}))}/></label>)}
         <label><span className="form-label">Specialization</span><select value={form.specialty} className="form-input" onChange={e=>setForm(v=>({...v,specialty:e.target.value}))}>{[...new Set([...specialties, form.specialty])].map(s=><option key={s} value={s}>{s}</option>)}</select></label>
         <div className="flex items-end gap-3"><button type="submit" disabled={saving} className="btn-primary flex-1">{saving ? "Saving..." : editing ? "Save changes" : "Create doctor"}</button><button type="button" className="btn-quiet" onClick={()=>setFormOpen(false)}>Cancel</button></div>
