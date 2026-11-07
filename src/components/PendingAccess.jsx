@@ -18,13 +18,6 @@ export default function PendingAccess({ name, email }) {
     } finally { setBusy(false); }
   }
 
-  function checkAccess() {
-    // Full navigation forces a fresh server-side session/role check.
-    // If role has changed to admin, the protected layout now permits entry.
-    router.replace("/dashboard");
-    router.refresh();
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f8fb] p-5 text-slate-900">
       <section className="card-panel w-full max-w-lg p-7 text-center sm:p-10">
@@ -47,9 +40,11 @@ export default function PendingAccess({ name, email }) {
           <span className="font-semibold text-slate-600">Signed in as</span>
           <p className="mt-1 break-all font-bold">{email}</p>
         </div>
-        <button type="button" onClick={checkAccess} className="btn-primary mt-7 w-full">
-          <FiRefreshCw/> Check my access
-        </button>
+        <form action="/dashboard" method="GET" className="mt-7">
+          <button type="submit" className="btn-primary w-full">
+            <FiRefreshCw/> Check my access
+          </button>
+        </form>
         <button type="button" disabled={busy} onClick={signOut} className="btn-quiet mt-3 w-full">
           <FiLogOut/> {busy ? "Signing out..." : "Sign out"}
         </button>
