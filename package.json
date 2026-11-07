@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "screenshots": "node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
     "better-auth": "^1.7.18",

@@ -160,7 +160,15 @@ Add actual screenshots after starting the app or deploying it. Suggested file pa
 - `docs/screenshots/dashboard-mobile.png`
 - `docs/screenshots/patients-mobile.png`
 
-Do **not** use screenshots containing real patient names, records, phone numbers, or other health data. Capture sanitized demo content. Screenshot files are not present yet; do not assume this documentation includes verified visual evidence.
+Do **not** include real patient names, ages, conditions, phone numbers or other private health details. To capture actual app screenshots automatically from a running local demo using **fictional records**, use a browser with the optional Playwright package:
+
+```bash
+npm install --no-save playwright
+npx playwright install chromium
+SCREENSHOT_EMAIL=demo-admin@example.com SCREENSHOT_PASSWORD=YOUR_DEMO_PASSWORD SCREENSHOT_TEST_DATA_ONLY=1 npm run screenshots
+```
+
+Use a demo administrator account promoted to `role: "admin"` in the local MongoDB `user` collection. The command saves real Desktop/Mobile screenshots to `docs/screenshots/`. Never commit credentials or genuine patient data. Screenshots are generated **only when you run the script**; this repository does not claim screenshots have already been captured.
 
 ## Security and deployment notes
 
