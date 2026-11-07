@@ -41,7 +41,6 @@ export default function PatientsManager({ initialDoctorId = "" }) {
     return () => controller.abort();
   }, [deferredDoctors, revision]);
 
-  // A deep link should still show the selected doctor when outside the first 50.
   useEffect(() => {
     if (!initialDoctorId || !/^[a-fA-F0-9]{24}$/.test(initialDoctorId)) return;
     api("doctors/" + initialDoctorId).then(d => {
@@ -49,9 +48,10 @@ export default function PatientsManager({ initialDoctorId = "" }) {
     }).catch(() => {});
   }, [initialDoctorId]);
 
+  // পেজপ্রতি ৫টি আইটেম দেখানোর জন্য limit=5 সেট করা হয়েছে
   useEffect(() => {
     const controller = new AbortController();
-    api("patients?" + queryString({ search: deferred, condition, doctorId, dateFrom, dateTo, page, limit: 10 }), { signal: controller.signal })
+    api("patients?" + queryString({ search: deferred, condition, doctorId, dateFrom, dateTo, page, limit: 5 }), { signal: controller.signal })
       .then(result => { setPatients(result.items || []); setMeta(result.pagination || { page, pages: 0, total: 0 }); })
       .catch(err => { if (err.name !== "AbortError") setError(err.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -84,45 +84,113 @@ export default function PatientsManager({ initialDoctorId = "" }) {
   const optionDoctors = [...new Map(doctors.map(d=>[d._id,d])).values()];
   return <section>
     <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-      <div><p className="mb-1 text-sm font-semibold text-teal-700">Records</p><h1 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">Patients</h1><p className="mt-2 text-sm text-slate-500">Manage patient records, conditions, and assigned doctors.</p></div>
-      <button className="btn-primary" onClick={() => formOpen ? setFormOpen(false) : openNew()}>{formOpen ? <FiX/> : <FiPlus/>}{formOpen ? "Close form" : "Add patient"}</button>
+      <div><p className="mb-1 text-sm font-semibold text-cyan-700">Records</p><h1 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">Patients</h1><p className="mt-2 text-sm text-slate-500">Manage patient records, conditions, and assigned doctors.</p></div>
+      <button className="btn-primary bg-cyan-600 hover:bg-cyan-700" onClick={() => formOpen ? setFormOpen(false) : openNew()}>{formOpen ? <FiX/> : <FiPlus/>}{formOpen ? "Close form" : "Add patient"}</button>
     </div>
     {error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
     {notice && <div role="status" className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800">{notice}</div>}
     {doctorError && <div role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Doctor directory: {doctorError}</div>}
-    {formOpen && <div className="card-panel mb-7 p-5 sm:p-7">
-      <div className="mb-5"><h2 className="text-lg font-bold">{editing ? "Edit patient" : "New patient"}</h2><p className="mt-1 text-xs text-slate-500">Select a doctor to associate this patient with.</p></div>
+    
+    {formOpen && <div className="card-panel mb-7 p-5 sm:p-7 bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="mb-5"><h2 className="text-lg font-bold text-slate-900">{editing ? "Edit patient" : "New patient"}</h2><p className="mt-1 text-xs text-slate-500">Select a doctor to associate this patient with.</p></div>
       <form onSubmit={save} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <label><span className="form-label">Patient full name</span><input className="form-input" required maxLength={120} value={form.name} placeholder="Patient name" onChange={e=>setForm({...form,name:e.target.value})}/></label>
-        <label><span className="form-label">Age</span><input className="form-input" type="number" min={0} max={120} required value={form.age} placeholder="35" onChange={e=>setForm({...form,age:e.target.value})}/></label>
-        <label><span className="form-label">Condition</span><select className="form-input" value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})}>{[...new Set([...conditions, form.condition])].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
-        <label><span className="form-label">Assigned doctor</span><select className="form-input" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} required><option value="">Select a doctor</option>{optionDoctors.map(d=><option key={d._id} value={d._id}>{d.name}</option>)}</select></label>
-        <div className="sm:col-span-2 xl:col-span-4 flex flex-wrap items-center gap-3"><label className="max-w-sm flex-1"><span className="form-label">Find a doctor (name prefix)</span><input className="form-input" value={doctorSearch} placeholder="Search doctor names..." onChange={e=>setDoctorSearch(e.target.value)}/></label><button disabled={saving} className="btn-primary self-end" type="submit">{saving ? "Saving..." : editing ? "Save changes" : "Create patient"}</button><button type="button" className="btn-quiet self-end" onClick={()=>setFormOpen(false)}>Cancel</button></div>
+        <label><span className="form-label text-xs font-bold uppercase text-slate-700">Patient full name</span><input className="form-input mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" required maxLength={120} value={form.name} placeholder="Patient name" onChange={e=>setForm({...form,name:e.target.value})}/></label>
+        <label><span className="form-label text-xs font-bold uppercase text-slate-700">Age</span><input className="form-input mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" type="number" min={0} max={120} required value={form.age} placeholder="35" onChange={e=>setForm({...form,age:e.target.value})}/></label>
+        <label><span className="form-label text-xs font-bold uppercase text-slate-700">Condition</span><select className="form-input mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white" value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})}>{[...new Set([...conditions, form.condition])].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
+        <label><span className="form-label text-xs font-bold uppercase text-slate-700">Assigned doctor</span><select className="form-input mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white" value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})} required><option value="">Select a doctor</option>{optionDoctors.map(d=><option key={d._id} value={d._id}>{d.name}</option>)}</select></label>
+        <div className="sm:col-span-2 xl:col-span-4 flex flex-wrap items-center gap-3"><label className="max-w-sm flex-1"><span className="form-label text-xs font-bold uppercase text-slate-700">Find a doctor (name prefix)</span><input className="form-input mt-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" value={doctorSearch} placeholder="Search doctor names..." onChange={e=>setDoctorSearch(e.target.value)}/></label><button disabled={saving} className="btn-primary self-end bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm" type="submit">{saving ? "Saving..." : editing ? "Save changes" : "Create patient"}</button><button type="button" className="btn-quiet self-end px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-100" onClick={()=>setFormOpen(false)}>Cancel</button></div>
       </form>
       {optionDoctors.length === 0 && <p className="mt-4 text-xs text-amber-700">No doctors found. <Link className="font-bold underline" href="/doctors">Add a doctor first.</Link></p>}
     </div>}
-    <div className="card-panel overflow-hidden">
+
+    <div className="card-panel overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm">
       <div className="grid grid-cols-1 gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 xl:grid-cols-[minmax(190px,1fr)_160px_190px_140px_140px]">
-        <label className="relative"><FiSearch className="absolute left-3 top-3.5 text-slate-400"/><input aria-label="Search patients" className="form-input pl-10" placeholder="Search patients..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></label>
-        <select aria-label="Filter by condition" className="form-input" value={condition} onChange={e=>{setCondition(e.target.value);setPage(1);}}><option value="All">All conditions</option>{conditions.map(c=><option key={c}>{c}</option>)}</select>
-        <select aria-label="Filter by doctor" className="form-input" value={doctorId} onChange={e=>{setDoctorId(e.target.value);setPage(1);}}><option value="">All doctors</option>{optionDoctors.map(d=><option value={d._id} key={d._id}>{d.name}</option>)}</select>
-        <input aria-label="Created from" className="form-input" type="date" value={dateFrom} max={dateTo || undefined} onChange={e=>{setDateFrom(e.target.value);setPage(1);}}/>
-        <input aria-label="Created until" className="form-input" type="date" value={dateTo} min={dateFrom || undefined} onChange={e=>{setDateTo(e.target.value);setPage(1);}}/>
+        <label className="relative"><FiSearch className="absolute left-3.5 top-3.5 text-slate-400"/><input aria-label="Search patients" className="form-input w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 text-sm" placeholder="Search patients..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/></label>
+        <select aria-label="Filter by condition" className="form-input w-full px-4 py-2 rounded-xl border border-slate-300 text-sm bg-white" value={condition} onChange={e=>{setCondition(e.target.value);setPage(1);}}><option value="All">All conditions</option>{conditions.map(c=><option key={c}>{c}</option>)}</select>
+        <select aria-label="Filter by doctor" className="form-input w-full px-4 py-2 rounded-xl border border-slate-300 text-sm bg-white" value={doctorId} onChange={e=>{setDoctorId(e.target.value);setPage(1);}}><option value="">All doctors</option>{optionDoctors.map(d=><option value={d._id} key={d._id}>{d.name}</option>)}</select>
+        <input aria-label="Created from" className="form-input w-full px-4 py-2 rounded-xl border border-slate-300 text-sm bg-white" type="date" value={dateFrom} max={dateTo || undefined} onChange={e=>{setDateFrom(e.target.value);setPage(1);}}/>
+        <input aria-label="Created until" className="form-input w-full px-4 py-2 rounded-xl border border-slate-300 text-sm bg-white" type="date" value={dateTo} min={dateFrom || undefined} onChange={e=>{setDateTo(e.target.value);setPage(1);}}/>
       </div>
+
       {initialDoctorId && <div className="border-b border-teal-100 bg-teal-50 px-5 py-3 text-xs text-teal-800">Viewing patients for a selected doctor. <Link className="font-bold underline" href="/patients">Show all patients</Link></div>}
-      <div className="overflow-x-auto"><table className="w-full min-w-[770px] text-left text-sm">
-        <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-6 py-4">Patient</th><th className="px-6 py-4">Age</th><th className="px-6 py-4">Condition</th><th className="px-6 py-4">Doctor</th><th className="px-6 py-4">Added</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
-        <tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan={6} className="px-6 py-14 text-center text-slate-500">Loading patients...</td></tr> :
-          patients.length === 0 ? <tr><td colSpan={6} className="px-6 py-16 text-center"><FiUser size={27} className="mx-auto mb-3 text-slate-300"/><strong>No patients found</strong><p className="mt-1 text-xs text-slate-500">Add a record or update your search filters.</p></td></tr> :
-          patients.map(p => <tr className="hover:bg-slate-50/80" key={p._id}>
-            <td className="px-6 py-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 font-bold text-indigo-700">{(p.name || "P").charAt(0).toUpperCase()}</span><span className="font-bold text-slate-900">{p.name}</span></div></td>
-            <td className="px-6 py-4 text-slate-600">{p.age} years</td>
-            <td className="px-6 py-4"><span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{p.condition}</span></td>
-            <td className="px-6 py-4 text-slate-600">{p.doctor?.name || optionDoctors.find(x=>x._id === p.doctorId)?.name || "Unassigned (legacy record)"}</td>
-            <td className="px-6 py-4 text-xs text-slate-500"><FiCalendar className="mr-1 inline"/>{prettyDate(p.createdAt)}</td>
-            <td className="px-6 py-4"><div className="flex justify-end gap-2"><button title="Edit patient" aria-label={"Edit " + p.name} onClick={()=>openEdit(p)} className="rounded-lg bg-slate-100 p-2.5 text-slate-700 hover:bg-slate-200"><FiEdit2/></button><button title="Delete patient" aria-label={"Delete " + p.name} onClick={()=>remove(p)} className="rounded-lg bg-red-50 p-2.5 text-red-600 hover:bg-red-100"><FiTrash2/></button></div></td>
-          </tr>)}</tbody>
-      </table></div>
+      
+      {/* ডেস্কটপের জন্য টেবিল এবং মোবাইলের জন্য রেসপন্সিভ কার্ড ভিউ */}
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[770px] text-left text-sm hidden md:table">
+          <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <tr>
+              <th className="px-6 py-4">Patient</th>
+              <th className="px-6 py-4">Age</th>
+              <th className="px-6 py-4">Condition</th>
+              <th className="px-6 py-4">Doctor</th>
+              <th className="px-6 py-4">Added</th>
+              <th className="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {loading ? (
+              <tr><td colSpan={6} className="px-6 py-14 text-center text-slate-500">Loading patients...</td></tr>
+            ) : patients.length === 0 ? (
+              <tr><td colSpan={6} className="px-6 py-16 text-center"><FiUser size={27} className="mx-auto mb-3 text-slate-300"/><strong>No patients found</strong><p className="mt-1 text-xs text-slate-500">Add a record or update your search filters.</p></td></tr>
+            ) : (
+              patients.map(p => (
+                <tr className="hover:bg-slate-50/80" key={p._id}>
+                  <td className="px-6 py-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-50 font-bold text-cyan-700">{(p.name || "P").charAt(0).toUpperCase()}</span><span className="font-bold text-slate-900">{p.name}</span></div></td>
+                  <td className="px-6 py-4 text-slate-600">{p.age} years</td>
+                  <td className="px-6 py-4"><span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">{p.condition}</span></td>
+                  <td className="px-6 py-4 text-slate-600">{p.doctor?.name || optionDoctors.find(x=>x._id === p.doctorId)?.name || "Unassigned"}</td>
+                  <td className="px-6 py-4 text-xs text-slate-500"><FiCalendar className="mr-1 inline"/>{prettyDate(p.createdAt)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button title="Edit patient" aria-label={"Edit " + p.name} onClick={()=>openEdit(p)} className="rounded-lg bg-slate-100 p-2.5 text-slate-700 hover:bg-slate-200"><FiEdit2/></button>
+                      <button title="Delete patient" aria-label={"Delete " + p.name} onClick={()=>remove(p)} className="rounded-lg bg-red-50 p-2.5 text-red-600 hover:bg-red-100"><FiTrash2/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* মোবাইল ডিভাইসের জন্য রেসপন্সিভ কার্ড লেআউট */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <p className="px-6 py-10 text-center text-slate-500 text-sm">Loading patients...</p>
+          ) : patients.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <FiUser size={27} className="mx-auto mb-3 text-slate-300"/>
+              <strong>No patients found</strong>
+              <p className="mt-1 text-xs text-slate-500">Add a record or update your search filters.</p>
+            </div>
+          ) : (
+            patients.map(p => (
+              <div key={p._id} className="p-4 space-y-3 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-50 font-bold text-cyan-700">{(p.name || "P").charAt(0).toUpperCase()}</span>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{p.name}</h4>
+                      <p className="text-xs text-slate-500">{p.age} years old</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={()=>openEdit(p)} className="p-2 bg-slate-100 rounded-lg text-slate-700"><FiEdit2 size={15}/></button>
+                    <button onClick={()=>remove(p)} className="p-2 bg-red-50 rounded-lg text-red-600"><FiTrash2 size={15}/></button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-100">
+                  <span className="rounded-md bg-amber-50 px-2 py-1 font-semibold text-amber-800">{p.condition}</span>
+                  <span className="text-slate-500"><FiCalendar className="mr-1 inline"/>{prettyDate(p.createdAt)}</span>
+                </div>
+                <div className="text-xs text-slate-500 font-medium">
+                  Doctor: <span className="text-slate-800 font-semibold">{p.doctor?.name || optionDoctors.find(x=>x._id === p.doctorId)?.name || "Unassigned"}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <Pagination {...meta} onPageChange={setPage}/>
     </div>
   </section>;
