@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import Link from "next/link";
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiUsers, FiX, FiActivity, FiCalendar, FiPhone, FiMail, FiHospital } from "react-icons/fi";
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiUsers, FiX, FiActivity, FiCalendar, FiPhone, FiMail, FiHome } from "react-icons/fi";
 import { api, queryString } from "@/lib/api";
 import Pagination from "@/components/Pagination";
 
@@ -28,7 +28,6 @@ export default function DoctorsManager() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // limit: 5 সেট করা হয়েছে যাতে ৫টির বেশি হলে পেজিনেশন কার্যকর হয়
   useEffect(() => {
     const controller = new AbortController();
     const query = queryString({ search: deferred, specialty, dateFrom, dateTo, page, limit: 5 });
@@ -150,7 +149,7 @@ export default function DoctorsManager() {
                 </div>
                 
                 <div className="space-y-1 text-xs text-slate-600 pt-1 border-t border-slate-100">
-                  <div className="flex items-center gap-1.5"><FiHospital className="text-slate-400"/> {record.hospital}</div>
+                  <div className="flex items-center gap-1.5"><FiHome className="text-slate-400"/> {record.hospital}</div>
                   {record.phone && <div className="flex items-center gap-1.5"><FiPhone className="text-slate-400"/> {record.phone}</div>}
                   {record.email && <div className="flex items-center gap-1.5"><FiMail className="text-slate-400"/> {record.email}</div>}
                 </div>
