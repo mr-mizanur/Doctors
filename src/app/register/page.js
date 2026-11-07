@@ -28,8 +28,9 @@ export default function RegisterPage() {
         throw new Error(authError.message || 'Registration failed. Please try again.');
       }
 
-      // সফল নিবন্ধনের পর ড্যাশবোর্ডে পাঠাবে
-      router.push('/dashboard');
+      // Every new account is 'user' until promoted in the database.
+      router.replace('/pending');
+      router.refresh();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,10 +52,10 @@ export default function RegisterPage() {
             />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">
-            Create Admin Account
+            Create Your Account
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Register to access Doctors Tracker dashboard
+            New accounts start with user access and await administrator approval.
           </p>
         </div>
 
@@ -74,7 +75,7 @@ export default function RegisterPage() {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Admin Name"
+              placeholder="Full Name"
               className="w-full px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:bg-white transition"
             />
           </div>

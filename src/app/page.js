@@ -27,8 +27,10 @@ export default function LoginPage() {
         throw new Error(authError.message || 'Login failed. Invalid credentials.');
       }
 
-      // সফল হলে ড্যাশবোর্ডে নেভিগেট করবে
-      router.push('/dashboard');
+      // The server dashboard layout checks the database-backed role.
+      // Non-admin accounts are redirected to the pending-access screen.
+      router.replace('/dashboard');
+      router.refresh();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -100,7 +102,7 @@ export default function LoginPage() {
             {loading ? (
               <span className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
             ) : (
-              'Sign In to Dashboard'
+              'Sign In'
             )}
           </button>
         </form>

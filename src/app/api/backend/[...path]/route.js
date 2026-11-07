@@ -30,9 +30,9 @@ async function handle(request, context) {
   if (!session?.user?.email)
     return NextResponse.json({ error: "Please sign in to continue" }, { status: 401 });
 
-  const admins = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
-  if (admins.length && !admins.includes(session.user.email.toLowerCase()))
-    return NextResponse.json({ error: "This account is not an administrator" }, { status: 403 });
+  // Enforce current database-backed role on every protected REST request.
+  if (session.user.role !== "admin")
+    return NextResponse.json({ error: "Administrator role required" }, { status: 403 });
 
   const backend = (process.env.BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
   const url = backend + "/api/" + cleanPath + request.nextUrl.search;

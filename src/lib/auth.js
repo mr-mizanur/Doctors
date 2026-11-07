@@ -11,6 +11,18 @@ if (process.env.NODE_ENV !== "production") globalThis.__doctorsTrackerMongo = mo
 export const auth = betterAuth({
   database: mongodbAdapter(mongo.db(process.env.MONGODB_DB || "doctor-tracker")),
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
+  // Role is server-owned. No registration or profile update can assign admin.
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+        input: false,
+        returned: true,
+      },
+    },
+  },
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:3000"],

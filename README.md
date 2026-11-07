@@ -9,7 +9,7 @@ A modern, session-protected administrative application for managing doctors and 
 ## Features
 
 - Better Auth email/password registration, login, persistent sessions and logout
-- Protected dashboard, doctors and patients routes; optional email-based administrator allowlist
+- Database-backed role-based access control: new registrations are users; only admins can access the dashboard, doctors, patients, and REST APIs
 - Doctor management: create, update, delete, filter by specialization/date, name/hospital prefix search and pagination
 - Patient management: assign doctor, create, edit, delete, search by name prefix, condition/date/doctor filtering and pagination
 - Doctor-specific patient views (`/patients?doctorId=...`)
@@ -42,8 +42,7 @@ PORT=5000
 MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/doctor-tracker?retryWrites=true&w=majority
 MONGODB_DB=doctor-tracker
 FRONTEND_URL=http://localhost:3000
-# Optional, recommended in production:
-# ADMIN_EMAILS=admin@example.com
+# Admin access is determined by the role in the Better Auth MongoDB 'user' collection.
 ```
 
 Run `npm run dev`. Confirm the API process and MongoDB connection:
@@ -70,8 +69,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/doctor-tracker?retryWrites=true&w=majority
 MONGODB_DB=doctor-tracker
 BACKEND_URL=http://localhost:5000
-# Optional, recommended in production; must match backend's allowlist:
-# ADMIN_EMAILS=admin@example.com
+# New registrations receive role 'user' and cannot self-promote.
 ```
 
 `BETTER_AUTH_SECRET` is for the Next.js app, not the Express service. Keep secrets in local environment files only; do **not** commit them.
@@ -82,7 +80,19 @@ Start Next.js:
 npm run dev
 ```
 
-Visit `http://localhost:3000`, register a new account (or sign into an existing one), then open `/dashboard`. For a truly restricted admin portal, set the same `ADMIN_EMAILS` value on **both** processes before allowing registrations.
+Visit `http://localhost:3000` and register. Every new account gets `role: "user"` and is redirected to `/pending`. An authorized database administrator can approve access in MongoDB Atlas, in the `doctor-tracker` database, Better Auth `user` collection, by editing **that specific user's** `role` field to the exact string `admin`. Do not change the `account` or `session` collections. After promotion, the user can press "Check my access", or sign out and sign in again.
+
+For example, from a privileged `mongosh` session (replace the email address only):
+
+```js
+use("doctor-tracker");
+db.user.updateOne(
+  { email: "someone@example.com" },
+  { $set: { role: "admin" } }
+);
+```
+
+Avoid promoting every user or using an unauthenticated HTTP route for role changes.
 
 ### 4. Validate the project
 
@@ -105,7 +115,7 @@ Next.js App Router
   |   /patients                  -> protected UI route layout
   |
   |-- /api/backend/*             -> same-origin server-side API gateway
-       | checks Better Auth session / ADMIN_EMAILS
+       | checks Better Auth session + user.role === admin
        | forwards session cookie (server-to-server)
        v
 Express API (localhost:5000)
@@ -133,7 +143,7 @@ Filter parameters: `page`, `limit`, `search`, `dateFrom`, `dateTo`; `specialty` 
 
 ### 1. Better Auth with a Next.js gateway
 
-Better Auth runs in Next.js because sessions are browser cookies tied to the frontend origin. Browser requests go only to the same-origin `/api/backend/*` gateway, where sessions are verified. Express independently validates the forwarded cookie through Better Auth rather than trusting user-supplied IDs. This avoids cross-origin cookie headaches, hides the backend endpoint from browser code, and gives both services an explicit access-control boundary. An `ADMIN_EMAILS` allowlist is available for production admin authorization.
+Better Auth runs in Next.js because sessions are browser cookies tied to the frontend origin. Browser requests go only to the same-origin `/api/backend/*` gateway, where sessions are verified. Express independently validates the forwarded cookie through Better Auth rather than trusting user-supplied IDs. This avoids cross-origin cookie headaches, hides the backend endpoint from browser code, and gives both services an explicit access-control boundary. Roles are server-owned Better Auth fields (`input: false`); every protected route and API call enforces `role === 'admin'`.
 
 ### 2. MongoDB indexed prefix search + aggregation
 
@@ -154,7 +164,7 @@ Do **not** use screenshots containing real patient names, records, phone numbers
 
 ## Security and deployment notes
 
-- Restrict production administrator access with `ADMIN_EMAILS` on both services and disable public self-service enrollment if you need a private admin-only environment.
+- Only database administrators may promote a user to `admin`. For a private production instance, consider disabling public registration, adding email verification, and logging all role changes.
 - Use HTTPS on both deployments and update `BACKEND_URL`, `FRONTEND_URL`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_APP_URL`.
 - Allow the application's IP/network to reach MongoDB Atlas; follow least-privilege database user policies.
 - Never commit `.env` / `.env.local`, never use real patient data for public demonstration, and back up data before migrations.
