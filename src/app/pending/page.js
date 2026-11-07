@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import PendingAccess from "@/components/PendingAccess";
 
-export const dynamic = "force-dynamic";
 export const metadata = { title: "Access Pending | Doctors Tracker" };
 
 export default async function PendingPage() {

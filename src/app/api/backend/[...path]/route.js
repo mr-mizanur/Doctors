@@ -1,8 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 // Only known resources can be proxied; never forward arbitrary paths.
 const permitted = (path, method) => {
