@@ -197,3 +197,26 @@ If `check:db` cannot connect to MongoDB Atlas, check the database user's passwor
 This can happen when a development hot-reload reuses a stale or closed `MongoClient` instance. The auth module now creates its own client rather than caching a potentially closed one on `globalThis`. After changing the database URI or pulling this fix, **stop the Next.js process and start it again**. Avoid using `npm run check:db` as a substitute for setting `.env.local` correctly; it only verifies the connection.
 
 If `npm run check:db` says `Missing script`, your checkout is older than the GitHub main branch. `git status` may say "up to date" against a stale local tracking ref. Run `git fetch origin` then `git pull --ff-only origin main`; preserve any modified `.env.example` file using Git stash or a local backup first. Do not commit actual credentials.
+
+## Vercel package-manager setup
+
+This repository uses **npm only**. `package-lock.json` is the single source of truth for installation.
+The obsolete `pnpm-lock.yaml`, `pnpm-workspace.yaml`, and `packageManager: pnpm` were removed
+because they made Vercel run `pnpm install --frozen-lockfile` against a stale lockfile and fail
+with `ERR_PNPM_OUTDATED_LOCKFILE` after Better Auth, MongoDB and react-icons were added.
+
+Recommended Vercel project settings:
+- Framework Preset: Next.js
+- Root Directory: the repository root (`.`)
+- Install Command: leave blank for automatic npm selection, or explicitly set `npm ci`
+- Build Command: leave at the Next.js default (`npm run build`)
+- Set `MONGODB_URI`, `MONGODB_DB`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
+  `NEXT_PUBLIC_APP_URL`, and `BACKEND_URL` as Vercel Environment Variables
+  for the appropriate environments; do **not** commit `.env.local`.
+- The production `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` must be set to the deployed
+  frontend's HTTPS origin, **not** `http://localhost:3000`.
+- The production `BACKEND_URL` must be the deployed Express API HTTPS origin,
+  **not** `http://localhost:5000`.
+
+Always run `npm install` locally when changing dependencies and commit the resulting
+`package-lock.json`. CI validates this path with `npm ci`.
