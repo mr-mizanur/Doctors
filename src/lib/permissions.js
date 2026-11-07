@@ -1,5 +1,6 @@
 import "server-only";
 import { auth, authDb } from "@/lib/auth";
+import { ObjectId } from "mongodb";
 
 /**
  * MongoDB 'user' collection is the ONLY authorization source.
@@ -12,8 +13,11 @@ export async function getAccess(headers) {
     return { session: null, role: null };
   }
   const email = session.user.email.toLowerCase();
+  const id = String(session.user.id);
+  const ids = [{ _id: id }, { id }];
+  if (/^[a-f0-9]{24}$/i.test(id)) ids.push({ _id: new ObjectId(id) });
   const currentUser = await authDb.collection("user").findOne(
-    { email },
+    { email, $or: ids },
     { projection: { role: 1 } },
   );
   return {
