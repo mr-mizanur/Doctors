@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { MongoClient } from "mongodb";
 
-const frontend = process.env.TEST_FRONTEND_URL || "http://127.0.0.1:3000";
+const frontend = process.env.TEST_FRONTEND_URL || "http://localhost:3000";
 const backend = process.env.TEST_BACKEND_URL || "http://127.0.0.1:5000";
 const client = new MongoClient(process.env.MONGODB_URI);
 const email = "ci-user-" + process.pid + "@example.test";
@@ -21,6 +21,7 @@ async function jsonRequest(path, { method = "GET", data, cookie } = {}) {
     method,
     headers: {
       Accept: "application/json",
+      ...(method === "GET" ? {} : { Origin: frontend }),
       ...(data === undefined ? {} : { "content-type": "application/json" }),
       ...(cookie ? {cookie} : {})
     },
